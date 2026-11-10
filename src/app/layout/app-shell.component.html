@@ -1,0 +1,85 @@
+<div class="app-frame">
+  <aside class="sidebar" [class.sidebar-open]="menuOpen()" aria-label="Main navigation">
+    <a class="brand" routerLink="/" (click)="closeMenu()" aria-label="ExtractIQ dashboard">
+      <span class="brand-mark" aria-hidden="true">E</span>
+      <span class="brand-copy"><strong>ExtractIQ</strong><small>AI Document Intelligence</small></span>
+    </a>
+
+    <div class="workspace-switcher">
+      <span class="workspace-avatar" aria-hidden="true">{{ roleInitials() }}</span>
+      <span class="workspace-copy"><strong>{{ user()?.displayName || 'Workspace' }}</strong><small>{{ user()?.role || 'USER' }} · H2 workspace</small></span>
+      <span class="workspace-chevron" aria-hidden="true">⌄</span>
+    </div>
+
+    <nav class="nav-groups">
+      <div class="nav-group">
+        <span class="nav-heading">WORKSPACE</span>
+        @for (item of primaryNavigation; track item.label) {
+          <a class="nav-item" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.route === '/' }" (click)="closeMenu()">
+            <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span><span>{{ item.label }}</span>
+          </a>
+        }
+      </div>
+
+      <div class="nav-group">
+        <span class="nav-heading">DATA</span>
+        @for (item of workspaceNavigation; track item.label) {
+          <a class="nav-item" [class.nav-unavailable]="item.disabled" [routerLink]="item.route" routerLinkActive="active" (click)="closeMenu()" [attr.title]="item.disabled ? 'Backend API not yet available — open for details' : null">
+            <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span><span>{{ item.label }}</span>
+            @if (item.disabled) { <span class="nav-soon">Soon</span> }
+          </a>
+        }
+      </div>
+
+      <div class="nav-group">
+        <span class="nav-heading">ACCOUNT</span>
+        @for (item of accountNavigation; track item.label) {
+          <a class="nav-item" [class.nav-unavailable]="item.disabled" [routerLink]="item.route" routerLinkActive="active" (click)="closeMenu()" [attr.title]="item.disabled ? 'Backend API not yet available — open for details' : null">
+            <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span><span>{{ item.label }}</span>
+            @if (item.disabled) { <span class="nav-soon">Soon</span> }
+          </a>
+        }
+      </div>
+
+      @if (user()?.role === 'ADMIN' || user()?.role === 'SUPER_ADMIN') {
+        <div class="nav-group">
+          <span class="nav-heading">ADMINISTRATION</span>
+          @for (item of adminNavigation; track item.label) {
+            <a class="nav-item" [routerLink]="item.route" routerLinkActive="active" (click)="closeMenu()">
+              <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span><span>{{ item.label }}</span>
+            </a>
+          }
+        </div>
+      }
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="support-card">
+        <span class="support-icon" aria-hidden="true">?</span>
+        <div><strong>Need a hand?</strong><span>Help center is coming soon.</span></div>
+      </div>
+      <div class="profile-card">
+        <span class="profile-avatar" aria-hidden="true">{{ roleInitials() }}</span>
+        <span><strong>{{ user()?.displayName }}</strong><small>{{ user()?.email }}</small></span>
+        <button class="profile-menu" type="button" (click)="signOut()" aria-label="Sign out">↪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-column">
+    <header class="topbar">
+      <button class="icon-button menu-toggle" type="button" (click)="menuOpen.update(v => !v)" aria-label="Toggle navigation" [attr.aria-expanded]="menuOpen()">☰</button>
+      <div class="topbar-context"><span class="context-dot"></span><span>Development environment</span></div>
+      <div class="topbar-right"><span class="topbar-status"><span class="status-dot"></span>Signed in · {{ user()?.role }}</span><span class="topbar-divider"></span><span class="topbar-avatar" [attr.aria-label]="user()?.role + ' account'">{{ roleInitials() }}</span><button class="sign-out-button" type="button" (click)="signOut()">Sign out</button></div>
+    </header>
+
+    <div class="security-banner" role="note">
+      <span class="security-icon" aria-hidden="true">!</span>
+      <p><strong>Local H2 workspace:</strong> accounts, sessions, documents, and reports are saved to the local database and persist across restarts. CSV, Word, Excel, and text-based PDF analysis is available; scanned PDFs need OCR.</p>
+    </div>
+
+    <main class="page-content"><router-outlet /></main>
+    <footer class="app-footer"><span>ExtractIQ · H2-backed Spring Boot preview</span><span>Local database: data/extractiq.mv.db</span></footer>
+  </div>
+</div>
+<button class="mobile-scrim" [class.scrim-visible]="menuOpen()" type="button" (click)="closeMenu()" aria-label="Close navigation"></button>
