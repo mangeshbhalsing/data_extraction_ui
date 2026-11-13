@@ -1,0 +1,14 @@
+<a class="back-link" routerLink="/documents/new">← Back to document upload</a>
+<section class="heading"><div><div class="eyebrow">DOCUMENT INTELLIGENCE</div><h1>Analyze a document</h1><p>Upload a report, spreadsheet, or CSV to get a content summary, extracted tables, and charts from its numeric data.</p></div></section>
+<div class="layout">
+  <section class="panel">
+    <h2>Choose a document</h2><p class="muted">Supported formats: PDF, Word (.doc/.docx), Excel (.xls/.xlsx), and CSV. Maximum 20 MiB.</p>
+    <label class="picker"><input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" (change)="select($event)" />
+      <span class="picker-icon">↑</span><strong>Browse for a file</strong><small>or choose a file from your computer</small></label>
+    @if (file(); as selected) { <div class="selected"><div><strong>{{ selected.name }}</strong><small>{{ formatBytes(selected.size) }} · {{ contentType(selected) }}</small></div><button type="button" (click)="clear()" [disabled]="busy()">Remove</button></div> }
+    @if (error(); as issue) { <div class="error" role="alert"><strong>{{ issue.code || 'Analysis could not be started' }}</strong><p>{{ issue.message }}</p></div> }
+    <button class="primary" type="button" (click)="analyze()" [disabled]="!file() || busy()">{{ status() }}</button>
+    <p class="privacy">Files are saved in the secured local H2 database and remain available after the backend restarts.</p>
+  </section>
+  <aside class="panel details"><h2>What you’ll get</h2><div><b>01</b><span><strong>Report summary</strong><small>Key sentences extracted from readable document text.</small></span></div><div><b>02</b><span><strong>Tabular data</strong><small>Rows and columns parsed from CSV, Excel sheets, Word tables, or text-based PDF tables.</small></span></div><div><b>03</b><span><strong>Related charts</strong><small>Charts use numeric columns found in the uploaded data.</small></span></div><p class="note">Scanned PDFs are not readable without OCR. The current report uses local document parsing and does not send your file to an external AI service.</p></aside>
+</div>

@@ -1,0 +1,36 @@
+<section class="page-heading dashboard-heading">
+  <div><div class="eyebrow"><span class="eyebrow-line"></span> WORKSPACE OVERVIEW</div><h1>Good to see you.</h1><p>Track your document intake and start a new extraction.</p></div>
+  <a class="button button-primary" routerLink="/documents/new"><span aria-hidden="true">＋</span> Upload a document</a>
+</section>
+
+<section class="metric-grid" aria-label="Document overview">
+  <article class="metric-card"><div class="metric-top"><span class="metric-icon icon-blue" aria-hidden="true">▤</span><span class="metric-caption">ALL TIME</span></div><div class="metric-value">{{ loading() ? '—' : documents().length }}</div><div class="metric-label">Documents received</div><div class="metric-foot">Across this local workspace</div></article>
+  <article class="metric-card"><div class="metric-top"><span class="metric-icon icon-green" aria-hidden="true">✓</span><span class="metric-caption">READY</span></div><div class="metric-value">{{ loading() ? '—' : uploadedCount() }}</div><div class="metric-label">Uploaded successfully</div><div class="metric-foot">Ready for an extraction request</div></article>
+  <article class="metric-card"><div class="metric-top"><span class="metric-icon icon-amber" aria-hidden="true">◷</span><span class="metric-caption">IN PROGRESS</span></div><div class="metric-value">{{ loading() ? '—' : pendingCount() }}</div><div class="metric-label">Awaiting file upload</div><div class="metric-foot">Upload sessions not yet completed</div></article>
+  <article class="metric-card"><div class="metric-top"><span class="metric-icon icon-violet" aria-hidden="true">✦</span><span class="metric-caption">COMPLETED</span></div><div class="metric-value">{{ loading() ? '—' : completedCount() }}</div><div class="metric-label">Completed extractions</div><div class="metric-foot">CSV processor results</div></article>
+</section>
+
+<div class="dashboard-grid">
+  <section class="panel recent-panel">
+    <div class="panel-heading"><div><div class="section-kicker">DOCUMENT ACTIVITY</div><h2>Recent documents</h2></div><a class="text-link" routerLink="/documents">View all <span aria-hidden="true">→</span></a></div>
+    @if (loading()) {
+      <div class="loading-state" role="status"><span class="spinner"></span> Loading your documents…</div>
+    } @else if (error()) {
+      <div class="inline-error" role="alert"><span>{{ error() }}</span><button class="button button-quiet" type="button" (click)="refresh()">Try again</button></div>
+    } @else if (recentDocuments().length === 0) {
+      <div class="empty-state"><span class="empty-icon" aria-hidden="true">▤</span><strong>No documents yet</strong><p>Upload a sample invoice to see it appear here.</p><a class="button button-secondary" routerLink="/documents/new">Upload first document</a></div>
+    } @else {
+      <div class="table-scroll"><table class="data-table"><thead><tr><th>DOCUMENT</th><th>ADDED</th><th>SIZE</th><th>STATUS</th><th><span class="sr-only">Open</span></th></tr></thead><tbody>
+        @for (document of recentDocuments(); track document.id) {
+          <tr><td><a class="file-cell" [routerLink]="['/documents', document.id]"><span class="file-icon" aria-hidden="true">{{ document.contentType === 'application/pdf' ? 'PDF' : 'FILE' }}</span><span class="file-name">{{ document.filename }}</span></a></td><td>{{ document.createdAt | date:'mediumDate' }}</td><td>{{ formatBytes(document.sizeBytes) }}</td><td><span class="status-pill" [class.status-success]="document.status === 'UPLOADED' || document.status === 'COMPLETED'" [class.status-pending]="document.status === 'UPLOAD_PENDING' || document.status === 'PROCESSING'" [class.status-failed]="document.status === 'FAILED'"><span class="pill-dot"></span>{{ document.status.replace('_',' ') }}</span></td><td><a class="row-action" [routerLink]="['/documents', document.id]" aria-label="View document">↗</a></td></tr>
+        }
+      </tbody></table></div>
+    }
+  </section>
+
+  <aside class="panel readiness-panel">
+    <div class="section-kicker">YOUR WORKFLOW</div><h2>From file to insight</h2><p class="readiness-copy">CSV upload, asynchronous extraction, review, validation, and approval are connected.</p>
+    <div class="workflow-list"><div class="workflow-step step-done"><span class="step-marker">✓</span><div><strong>Upload a document</strong><small>PDF, JPEG, PNG, or CSV · 20 MiB max</small></div><span class="step-label">Ready</span></div><div class="workflow-step step-active"><span class="step-marker">2</span><div><strong>Request extraction</strong><small>CSV rows are processed asynchronously</small></div><span class="step-label">Active</span></div><div class="workflow-step step-done"><span class="step-marker">3</span><div><strong>Review extracted data</strong><small>Validate corrections and approve records</small></div><span class="step-label">Available</span></div></div>
+    <div class="readiness-note"><span aria-hidden="true">i</span><p>PDF and image OCR and external AI providers are not configured. Their jobs report a clear failure instead of generating sample results.</p></div>
+  </aside>
+</div>

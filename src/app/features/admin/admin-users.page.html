@@ -1,0 +1,86 @@
+<header class="page-heading">
+  <div><span class="eyebrow">{{ isSuperAdmin() ? 'SUPER ADMINISTRATION' : 'ORGANIZATION ADMINISTRATION' }}</span><h1>{{ isSuperAdmin() ? 'Users & organizations' : 'Users & access' }}</h1><p>{{ isSuperAdmin() ? 'Create organizations and administrators, and manage accounts across all workspaces.' : 'Create users in your organization and manage their sign-in access.' }}</p></div>
+  <button class="refresh" type="button" (click)="refresh()" [disabled]="loading() || !!busyId()">↻ Refresh</button>
+</header>
+
+<nav class="tabs" aria-label="Admin sections">
+  <button type="button" [class.selected]="activeTab() === 'users'" (click)="changeTab('users')">Users & access</button>
+  <button type="button" [class.selected]="activeTab() === 'create-user'" (click)="changeTab('create-user')">Create user</button>
+  @if (isSuperAdmin()) { <button type="button" [class.selected]="activeTab() === 'create-organization'" (click)="changeTab('create-organization')">Create organization</button> }
+</nav>
+
+@if (error()) { <p class="alert error" role="alert">{{ error() }}</p> }
+@if (notice()) { <p class="alert success" role="status">{{ notice() }}</p> }
+
+@if (activeTab() === 'users') {
+  <section class="summary-row" aria-label="User counts">
+    <div class="summary-card"><span>Total accounts</span><strong>{{ users().length }}</strong></div>
+    <div class="summary-card"><span>Administrators</span><strong>{{ adminCount() }}</strong></div>
+    <div class="summary-card"><span>Suspended</span><strong>{{ suspendedCount() }}</strong></div>
+  </section>
+  <section class="panel">
+    <div class="table-heading"><div><h2>Account directory</h2><p>{{ isSuperAdmin() ? 'Accounts across every organization.' : 'Accounts in your organization.' }}</p></div><span class="count">{{ users().length }} accounts</span></div>
+    @if (loading()) { <div class="empty" role="status">Loading accounts…</div> }
+    @else if (!users().length) { <div class="empty">No accounts were found.</div> }
+    @else {
+      <div class="table-scroll"><table><thead><tr><th>User</th>@if (isSuperAdmin()) { <th>Organization</th> }<th>Role</th><th>Sign-in access</th><th>Joined</th><th>Actions</th></tr></thead><tbody>
+        @for (user of users(); track user.userId) {
+          <tr>
+            <td><div class="user-cell"><span class="avatar">{{ user.displayName.charAt(0).toUpperCase() }}</span><span><strong>{{ user.displayName }} @if (isSelf(user)) { <em>You</em> }</strong>@if (user.protectedAdmin) { <em class="protected-label">Protected organization admin</em> }<small>{{ user.email }}</small></span></div></td>
+            @if (isSuperAdmin()) { <td><span class="organization-cell">{{ user.organizationName }}</span><small class="organization-id">{{ user.organizationId }}</small></td> }
+            <td>
+              @if (canEditRole(user)) { <div class="role-control"><select [value]="roleDraft(user)" (change)="setRole(user, $event)" [disabled]="isSelf(user) || busyId() === user.userId" [attr.aria-label]="'Role for ' + user.displayName"><option value="USER">User</option><option value="ADMIN">Admin</option></select>@if (roleChanged(user)) { <button class="save-role" type="button" (click)="saveRole(user)" [disabled]="isSelf(user) || busyId() === user.userId">Save</button> }</div> }
+              @else { <span class="role-label">{{ user.role.replace('_', ' ') }}</span> }
+            </td>
+            <td><span class="status" [class.active]="user.enabled" [class.suspended]="!user.enabled"><i></i>{{ user.enabled ? 'Active' : 'Suspended' }}</span></td>
+            <td>{{ user.createdAt | date:'mediumDate' }}</td>
+            <td><div class="actions"><button class="access-button" type="button" (click)="beginEdit(user)" [disabled]="!canManageUser(user) || busyId() === user.userId">Edit</button><button class="access-button" type="button" (click)="toggleAccess(user)" [disabled]="isSelf(user) || !canManageUser(user) || busyId() === user.userId">{{ busyId() === user.userId ? 'Saving…' : user.enabled ? 'Suspend' : 'Reactivate' }}</button><button class="access-button delete-button" type="button" (click)="deleteUser(user)" [disabled]="isSelf(user) || !canManageUser(user) || busyId() === user.userId">Delete</button></div></td>
+          </tr>
+        }
+      </tbody></table></div>
+    }
+    <footer class="table-footer"><span>Role changes apply to existing sessions on their next request.</span><span>Suspended accounts are signed out immediately.</span></footer>
+  </section>
+}
+
+@if (activeTab() === 'create-user') {
+  <section class="panel form-panel"><div class="form-heading"><h2>Create user</h2><p>{{ isSuperAdmin() ? 'Add a user or administrator to an organization.' : 'New users are added to your organization with standard user access.' }}</p></div>
+    <form (submit)="createUser($event)">
+      <label>Full name<input name="displayName" required maxlength="100" autocomplete="name" /></label>
+      <label>Email address<input name="email" type="email" required maxlength="320" autocomplete="email" /></label>
+      <label>Temporary password<input name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password" /><small>At least 12 characters, including uppercase, lowercase, and a number.</small></label>
+      @if (isSuperAdmin()) {
+        <label>Organization<select name="organizationId" required [value]="selectedOrganizationId()"><option value="" disabled>Select an organization</option>@for (organization of organizations(); track organization.organizationId) { <option [value]="organization.organizationId">{{ organization.name }}</option> }</select></label>
+        <label>Role<select name="role" [value]="newUserRole()" (change)="setNewUserRole($event)"><option value="USER">User</option><option value="ADMIN">Administrator</option></select></label>
+      } @else { <div class="fixed-access"><span>Organization</span><strong>Current organization</strong><span>Access level</span><strong>User</strong></div> }
+      <button class="primary" type="submit" [disabled]="!!busyId() || (isSuperAdmin() && !organizations().length)">{{ busyId() === 'create-user' ? 'Creating user…' : 'Create user' }}</button>
+    </form>
+  </section>
+}
+
+@if (activeTab() === 'create-organization' && isSuperAdmin()) {
+  <section class="panel form-panel"><div class="form-heading"><h2>Create organization and admin</h2><p>This creates the organization and its first administrator together.</p></div>
+    <form (submit)="createOrganization($event)">
+      <label>Organization name<input name="name" required maxlength="120" autocomplete="organization" /></label>
+      <div class="form-subheading">Initial administrator</div>
+      <label>Full name<input name="adminDisplayName" required maxlength="100" autocomplete="name" /></label>
+      <label>Email address<input name="adminEmail" type="email" required maxlength="320" autocomplete="email" /></label>
+      <label>Temporary password<input name="adminPassword" type="password" required minlength="12" maxlength="128" autocomplete="new-password" /><small>At least 12 characters, including uppercase, lowercase, and a number.</small></label>
+      <button class="primary" type="submit" [disabled]="!!busyId()">{{ busyId() === 'create-organization' ? 'Creating organization…' : 'Create organization and admin' }}</button>
+    </form>
+  </section>
+}
+
+@if (editingUser(); as editUser) {
+  <div class="modal-backdrop" (click)="closeEdit()">
+    <section class="edit-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-user-title" (click)="$event.stopPropagation()">
+      <div class="form-heading"><h2 id="edit-user-title">Edit user</h2><p>Update account details for {{ editUser.email }}. Leave the password blank to keep it unchanged.</p></div>
+      <form (submit)="saveUser(editUser, $event)">
+        <label>Full name<input name="displayName" required maxlength="100" [value]="editUser.displayName" autocomplete="name" /></label>
+        <label>Email address<input name="email" type="email" required maxlength="320" [value]="editUser.email" autocomplete="email" /></label>
+        <label>Reset password (optional)<input name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" /><small>At least 12 characters, including uppercase, lowercase, and a number.</small></label>
+        <div class="dialog-actions"><button class="refresh" type="button" (click)="closeEdit()" [disabled]="busyId() === editUser.userId">Cancel</button><button class="create-user-button" type="submit" [disabled]="busyId() === editUser.userId">{{ busyId() === editUser.userId ? 'Saving…' : 'Save changes' }}</button></div>
+      </form>
+    </section>
+  </div>
+}

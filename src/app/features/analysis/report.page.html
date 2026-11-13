@@ -1,0 +1,14 @@
+<a class="back-link" routerLink="/documents">← Back to documents</a>
+@if (loading()) { <div class="state">Loading your analysis report…</div> }
+@else if (error()) { <section class="panel error"><h1>Report unavailable</h1><p>{{ error() }}</p></section> }
+@else if (result(); as report) {
+  <section class="heading"><div><div class="eyebrow">DOCUMENT ANALYSIS · {{ report.data['sourceType'] || 'FILE' }}</div><h1>Analysis report</h1><p>Review the summary, extracted tables, and charts generated from this document.</p></div><a class="review" routerLink="/extractions">Open extraction review →</a></section>
+  <section class="panel summary"><div class="section-label">REPORT SUMMARY</div><p>{{ summary() }}</p><div class="metrics"><span><strong>{{ report.data['wordCount'] || 0 }}</strong> words analyzed</span><span><strong>{{ report.data['recordCount'] || 0 }}</strong> data rows</span><span><strong>{{ tables().length }}</strong> tables</span></div></section>
+  <section class="section-heading"><div><div class="section-label">EXTRACTED DATA</div><h2>Tables</h2></div></section>
+  @if (tables().length) { @for (table of tables(); track table.name) {
+    <section class="panel table-panel"><div class="table-title"><h3>{{ table.name }}</h3><span>{{ table.recordCount }} rows</span></div><div class="table-wrap"><table><thead><tr>@for (column of table.columns; track column) { <th>{{ column }}</th> }</tr></thead><tbody>@for (row of table.records; track $index) { <tr>@for (column of table.columns; track column) { <td>{{ display(row[column]) }}</td> }</tr> }</tbody></table></div></section>
+  } } @else { <section class="panel empty">No tabular data was found in this document.</section> }
+  <section class="section-heading"><div><div class="section-label">VISUAL INSIGHTS</div><h2>Related charts</h2></div></section>
+  @if (charts().length) { <div class="chart-grid">@for (chart of charts(); track chart.title) { <section class="panel chart-card"><h3>{{ chart.title }}</h3><div class="chart-series">{{ chart.seriesLabel }}</div>@for (label of chart.labels; track $index) { <div class="bar-row"><span class="bar-label" [title]="label">{{ label }}</span><div class="bar-track"><div class="bar" [style.width.%]="chartWidth(chart, chart.values[$index])"></div></div><strong>{{ chart.values[$index] }}</strong></div> }</section> }</div> }
+  @else { <section class="panel empty">No chartable numeric columns were found. Charts appear when the document contains rows with numeric values.</section> }
+}
