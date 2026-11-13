@@ -1,0 +1,31 @@
+<a class="back-link" routerLink="/documents">← Back to documents</a>
+<section class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> NEW DOCUMENT</div><h1>Upload a document</h1><p>Choose a sample invoice to upload and create an extraction job.</p></div><span class="step-chip"><span>1</span> Upload <i>→</i> <span>2</span> Job status</span></section>
+
+<a class="analysis-callout" routerLink="/documents/analyze"><span class="analysis-icon">✦</span><span><strong>Need a summary, tables, and charts?</strong><small>Analyze a PDF, Word document, Excel workbook, or CSV in a dedicated report.</small></span><b>Analyze a document →</b></a>
+
+<div class="upload-layout">
+  <section class="panel upload-panel">
+    <div class="panel-title"><span class="upload-title-icon" aria-hidden="true">↑</span><div><h2>Select a file</h2><p>Start with one document. The current API accepts a single file per upload.</p></div></div>
+
+    @if (!selectedFile()) {
+      <label class="dropzone" [class.dropzone-active]="isDragging()" (drop)="onDrop($event)" (dragover)="onDragOver($event)" (dragleave)="onDragLeave()">
+        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,application/pdf,image/jpeg,image/png,text/csv" (change)="onFileInput($event)" />
+        <span class="drop-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4.5 15.5v3A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <strong>Drop your file here, or <span>browse</span></strong><small>PDF, JPG, PNG, or CSV · Up to 20 MB</small>
+      </label>
+    } @else {
+      <div class="selected-file"><span class="selected-file-icon" aria-hidden="true">{{ selectedFile()?.name?.toLowerCase()?.endsWith('.pdf') ? 'PDF' : 'FILE' }}</span><div class="selected-file-info"><strong>{{ selectedFile()?.name }}</strong><small>{{ formatBytes(selectedFile()!.size) }} · {{ contentTypeFor(selectedFile()!) }}</small></div>@if (!busy()) { <button class="remove-file" type="button" (click)="clearFile()" aria-label="Remove selected file">×</button> }</div>
+      @if (busy()) { <div class="upload-progress" role="status"><div class="progress-label"><span>{{ phaseLabel() }}</span><strong>{{ progress() === null ? ' ' : progress() + '%' }}</strong></div><div class="progress-track"><div class="progress-fill" [class.progress-indeterminate]="progress() === null" [style.width.%]="progress() ?? 35"></div></div><small>Keep this page open while the file is sent.</small></div> }
+    }
+
+    @if (error(); as issue) { <div class="upload-error" role="alert"><span class="error-mark" aria-hidden="true">!</span><div><strong>{{ issue.code || 'Upload could not be completed' }}</strong><p>{{ issue.message }}</p></div><button type="button" class="error-close" (click)="error.set(null)" aria-label="Dismiss error">×</button></div> }
+
+    <div class="upload-actions"><button class="button button-primary" type="button" (click)="startUpload()" [disabled]="!selectedFile() || busy()">{{ phaseLabel() }}</button><span class="privacy-hint"><span aria-hidden="true">⌑</span> Uploads are saved in the local H2 database.</span></div>
+  </section>
+
+  <aside class="side-column">
+    <section class="panel request-panel"><div class="section-kicker">EXTRACTION REQUEST</div><h2>CSV · Structured rows</h2><p>CSV headers and rows are parsed by the local asynchronous worker. PDF and image OCR needs a configured provider.</p><div class="request-summary"><span>Document type</span><strong>Tabular data</strong></div><div class="request-summary"><span>Output</span><strong>Structured JSON</strong></div><div class="request-summary"><span>Processing</span><strong class="text-amber">CSV active</strong></div></section>
+    <section class="security-card"><span class="security-symbol" aria-hidden="true">!</span><div><strong>Local development workspace</strong><p>Authenticated sessions and organization isolation are enabled. The local H2 database persists uploaded data between backend restarts.</p></div></section>
+    <div class="format-note"><strong>Before you upload</strong><span>• Files must be non-empty and no larger than 20 MiB.</span><span>• The backend checks file signatures, content type, and byte length.</span><span>• PDF and image OCR and external AI integrations are not configured.</span></div>
+  </aside>
+</div>
